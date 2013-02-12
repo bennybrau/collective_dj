@@ -1,0 +1,14 @@
+{
+    "applications": {
+        "_default": {
+            "link": "totem"
+        }, 
+        "totem": {
+            "applicationId": "Bwg2bgfendIUGwwNZHmjkzs9Zwxl3MMJ54xGw76t", 
+            "masterKey": "JnNMbRK6poKhDhwAaCQ3Vv9HuruF3t5SReF7oo4o"
+        }
+    }, 
+    "global": {
+        "parseVersion": "1.1.14"
+    }
+}

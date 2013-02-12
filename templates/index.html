@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  	<meta charset="utf-8">
+    <title>Totem</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <style>
+      body {
+        padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+      }
+    </style>
+    
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    
+    <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    
+    <script>
+    
+    var isPlaying = undefined;
+    function play(spotifyUri)
+	{
+		if (isPlaying)
+		{
+			$.ajax({url: "http://localhost:5000/stop", data:{}, success: function(data) {isPlaying = undefined;}});
+		} else {
+			$.ajax({url: "http://localhost:5000/play", data:{"trackURI":spotifyUri}, success: function(data) {isPlaying = data;}});
+		}
+	}
+    </script>
+  </head>
+  
+  <body>
+  	<div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </a>
+          <a class="brand" href="#">Totem</a>
+          <div class="nav-collapse collapse">
+            <ul class="nav">
+              <li class="active"><a href="#">Home</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    <div id="maincontent" class="container">
+    	<div class="page-header">
+  			<h1>{{ venueName }} <small>Who's in da house?</small></h1>
+		</div>
+		<div class="row">
+			<h2>People</h2>
+			<div class="span12" id="results"></div>
+		</div>
+		<div class="row">
+			<h2>Tracks</h2>
+			<div class="span12" id="tracks"></div>
+		</div>
+    </div> <!-- /container -->
+    
+    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <script src="http://js.pusher.com/1.12/pusher.min.js"></script>
+    <script src="{{ url_for('static', filename='js/md5.js') }}"></script>
+    
+    {% if whosHere %}
+    	<script>
+    		$('#results').append('<ul id="personsPresent"></ul>');
+    		{% for person in whosHere %}
+    			$('#personsPresent').append('<li> {{ person["objectId"] }} </li>');
+    		{% endfor %}
+    	</script>
+    {% else %}
+    	<script>
+    		$('#results').append('No one here Yo.');
+    	</script>
+    {% endif %}
+    	
+    {% if tracks %}
+    	<script>
+    		$('#tracks').append('<ul id="tracklist"></ul>');
+    		{% for track in tracks %}
+    			$('#tracklist').append('<li> {{ track["title"] }} - {{ track["artist"] }} <a id="{{ track["spotifyURI"] }}" class="btn" href="#">Play</a></li>');
+    		{% endfor %}
+    	</script>
+    {% endif %}
+    
+    {% if pusher_app_key %}
+    <script>
+    	
+    	//Doing long polling for now.  Switch out with WebSockets implementation (Pusher or otherwise)
+    	(function poll() {
+    		$.ajax({url: "http://localhost:5000/whoshere", success: function(data) {
+    			$('#results').empty();
+    			$('#tracks').empty();
+    			
+    			if (data) {
+    				var dataObj = JSON.parse(data);
+    				var people = dataObj.people;
+    				var tracks = dataObj.tracks;
+    				if (people && (people.length > 0)) {
+    					$('#results').append('<ul id="personsPresent"></ul>');
+    					for (var i = 0; i < people.length; i++) {
+    						$('#personsPresent').append('<li>' + people[i].objectId + '</li>');
+    					}
+    				} else {
+    					$('#results').append('No one here Yo.');
+    				}
+    				
+    				if (tracks && (tracks.length > 0)) {
+    					$('#tracks').append('<ul id="tracklist"></ul>');
+    					for (var i = 0; i < tracks.length; i++) {
+    						var playOrPause = (tracks[i].playing) ? 'Pause' : 'Play';
+    						if (tracks[i].playing)
+    							isPlaying = tracks[i].spotifyURI;
+    						$('#tracklist').append('<li>' + tracks[i].title + ' - ' + tracks[i].artist + ' <a id="' + tracks[i].spotifyURI + '" class="btn" href="#">' + playOrPause + '</a></li>');
+    						$('.btn').click(function() {
+    							var spotifyURI = $(this).attr("id");
+    							play(spotifyURI);
+    						});
+    					}
+    				} else {
+    					$('#tracks').append('No music...shit.');
+    				}
+    			}
+    		}, complete: poll, timeout:30000 });
+    	})();
+    	
+    </script>
+    {% endif %}
+    
+    <script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
+  </body>
+</html>
