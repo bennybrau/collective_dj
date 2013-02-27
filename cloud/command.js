@@ -65,22 +65,28 @@ exports.whosHere = function(venue, fromSMS, response) {
 	var checkInCollection = attendanceQuery.collection();
 	checkInCollection.fetch({
 		success: function(checkInCollection) {
-			var checkedInUsers = new Array();
-			var UserCollection = Parse.Collection.extend({ model:Parse.User });
+			var checkedInUserIds = new Array();
 			
 			checkInCollection.each(function(c) {
-				checkedInUsers.push(c.get("user"));
+				checkedInUserIds.push(c.get("user").id);
 			});
 			
-			if (fromSMS) {
-				var msg = JSON.stringify(checkedInUsers);
-				if (checkedInUsers.length == 0)
-					msg = "No one in da house.";
-				
-				exports.sendSMS(fromSMS, msg);
-			}
+			var userQuery = new Parse.Query(Parse.User);
+			userQuery.containedIn("objectId", checkedInUserIds);
+			
+			userQuery.find({
+				success: function(results) {
+					response.success(results);
 					
-			response.success(checkedInUsers);
+					if (fromSMS) {
+						var msg = JSON.stringify(results);
+						if (results.length == 0)
+							msg = "No one in da house.";
+				
+						exports.sendSMS(fromSMS, msg);
+					}
+				}
+			});
 		},
 		error: function(checkInCollection, err) {
 			response.error(err);

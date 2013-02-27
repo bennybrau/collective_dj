@@ -77,7 +77,7 @@
     	<script>
     		$('#results').append('<ul id="personsPresent"></ul>');
     		{% for person in whosHere %}
-    			$('#personsPresent').append('<li> {{ person["objectId"] }} </li>');
+    			$('#personsPresent').append('<li> {{ person["username"] }} </li>');
     		{% endfor %}
     	</script>
     {% else %}
@@ -111,7 +111,7 @@
     				if (people && (people.length > 0)) {
     					$('#results').append('<ul id="personsPresent"></ul>');
     					for (var i = 0; i < people.length; i++) {
-    						$('#personsPresent').append('<li>' + people[i].objectId + '</li>');
+    						$('#personsPresent').append('<li>' + people[i].username + '</li>');
     					}
     				} else {
     					$('#results').append('No one here Yo.');
