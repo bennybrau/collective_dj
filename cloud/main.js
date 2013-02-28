@@ -7,6 +7,13 @@ Parse.Cloud.define("receiveSMS", function(request, response) {
 	command.parse(input, fromSMS, response);
 });
 
+Parse.Cloud.define("checkIn", function(request, response) {
+	var venueId = request.params.VenueId;
+	var fromSMS = request.params.From;
+	
+	command.checkin(venueId, fromSMS, response);
+});
+
 Parse.Cloud.define("whoIsHere", function(request, response) {
 	var venueId = request.params.VenueId;
 	command.whosHere(venueId, null, {

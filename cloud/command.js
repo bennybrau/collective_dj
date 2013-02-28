@@ -116,8 +116,9 @@ exports.checkin = function(venue, fromSMS, response) {
 					checkin.set("checkInMills", checkInTime);
 					checkin.save(null, {});
 					
-					exports.sendSMS(fromSMS, "You are checked into " + v.get("name") + ".  Your tunes will be added to the playlist.");
-					exports.sendPusherCheckInNotification(v.get("channelName"), u);
+					if (fromSMS)
+						exports.sendSMS(fromSMS, "You are checked into " + v.get("name") + ".  Your tunes will be added to the playlist.");
+					//exports.sendPusherCheckInNotification(v.get("channelName"), u);
 					response.success("Checked in user: " + u.get("username") + " at venue " + v.get("name"));
 				},
 				error: function(u,err) {

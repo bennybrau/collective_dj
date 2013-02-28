@@ -15,6 +15,7 @@
     </style>
     
     <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/site.css') }}" rel="stylesheet">
     
     <!-- HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
@@ -61,7 +62,8 @@
 		</div>
 		<div class="row">
 			<h2>People</h2>
-			<div class="span12" id="results"></div>
+			<div class="span12" id="results">
+			</div>
 		</div>
 		<div class="row">
 			<h2>Tracks</h2>
@@ -73,11 +75,12 @@
     <script src="http://js.pusher.com/1.12/pusher.min.js"></script>
     <script src="{{ url_for('static', filename='js/md5.js') }}"></script>
     
+    
     {% if whosHere %}
     	<script>
-    		$('#results').append('<ul id="personsPresent"></ul>');
+    		$('#results').append('<ul id="personsPresent" class="thumbnails"></ul>');
     		{% for person in whosHere %}
-    			$('#personsPresent').append('<li> {{ person["username"] }} </li>');
+    			$('#personsPresent').append('<li class="span3"><div class="thumbnail"><img class="avatar" src="{{ person["avatarImgUrl"] }}"><div class="caption"><h4>{{ person["displayName"] }}</h4></div></div></li>');
     		{% endfor %}
     	</script>
     {% else %}
@@ -99,6 +102,7 @@
     <script>
     	
     	//Doing long polling for now.  Switch out with WebSockets implementation (Pusher or otherwise)
+    	
     	(function poll() {
     		$.ajax({url: "http://localhost:5000/whoshere", success: function(data) {
     			$('#results').empty();
@@ -109,9 +113,9 @@
     				var people = dataObj.people;
     				var tracks = dataObj.tracks;
     				if (people && (people.length > 0)) {
-    					$('#results').append('<ul id="personsPresent"></ul>');
+    					$('#results').append('<ul id="personsPresent" class="thumbnails"></ul>');
     					for (var i = 0; i < people.length; i++) {
-    						$('#personsPresent').append('<li>' + people[i].username + '</li>');
+    						$('#personsPresent').append('<li class="span3"><div class="thumbnail"><img class="avatar" src="' + people[i].avatarImgUrl + '"><div class="caption"><h4>' + people[i].displayName + '</h4></div></div></li>');
     					}
     				} else {
     					$('#results').append('No one here Yo.');
