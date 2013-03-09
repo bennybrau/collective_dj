@@ -11,7 +11,7 @@ exports.parse = function(command, fromSMS, response) {
 		switch (operation) {
 			case 'checkin':
 				if (tokens.length > 1) {
-					exports.checkin(tokens[1].toLowerCase(), fromSMS, response);
+					exports.checkinBySMS(tokens[1].toLowerCase(), fromSMS, true, response);
 				}
 				break;
 			case 'whoshere':
@@ -47,6 +47,42 @@ exports.sendSMS = function(toSMS, message) {
     		return false;
   		}
 	});
+}
+
+exports.whereAmI = function(userSMS, response) {
+	var userQuery = new Parse.Query(Parse.User);
+	userQuery.equalTo("SMS", userSMS);
+	
+	// get any checkins by the user in the last 4 hours
+	
+	var attendanceQuery = new Parse.Query("VenueCheckIn");
+	attendanceQuery.matchesQuery("user", userQuery);
+	var curTime = new Date();
+	var fourHoursAgo = new Date(curTime.getTime() - 14400000); //4 hrs in mills
+	var fourHoursAgoUTC = Date.UTC(fourHoursAgo.getFullYear(), fourHoursAgo.getMonth(), fourHoursAgo.getDate(),
+											fourHoursAgo.getHours(), fourHoursAgo.getMinutes(), fourHoursAgo.getSeconds(), fourHoursAgo.getMilliseconds());
+	attendanceQuery.greaterThanOrEqualTo("checkInMills", fourHoursAgoUTC);
+	
+	attendanceQuery.first({
+		success: function(checkin) {
+			var venueId = checkin.get("venue").id;
+			var Venue = Parse.Object.extend("Venue");
+			var venueQuery = new Parse.Query(Venue);
+			
+			venueQuery.get(venueId, {
+				success: function(venue) {
+					response.success(venue);
+				},
+				error: function(venue, error) {
+					response.error(error);
+				}
+			});
+		},
+		error: function(error) {
+			response.error(error);
+		}
+	});
+
 }
 
 
@@ -94,7 +130,46 @@ exports.whosHere = function(venue, fromSMS, response) {
 	});
 }
 
-exports.checkin = function(venue, fromSMS, response) {
+exports.checkin = function(venue, username, sendConfirmation, response) {
+	console.log("Attempting checkin to venue: " + venue + " from user: " + username);
+	var userQuery = new Parse.Query(Parse.User);
+	userQuery.equalTo("username", username);
+	
+	var venueQuery = new Parse.Query("Venue");
+	venueQuery.equalTo("SMSHandle", venue);
+	
+	venueQuery.first({
+		success: function(v) {
+			userQuery.first({
+				success: function(u) {
+					var VenueCheckin = Parse.Object.extend("VenueCheckIn");
+					var checkin = new VenueCheckin();
+					checkin.set("user", u);
+					checkin.set("venue", v);
+					var curDate = new Date();
+					var checkInTime = Date.UTC(curDate.getFullYear(), curDate.getMonth(), curDate.getDate(),
+											curDate.getHours(), curDate.getMinutes(), curDate.getSeconds(), curDate.getMilliseconds());
+					checkin.set("checkInMills", checkInTime);
+					checkin.save(null, {});
+					
+					if (sendConfirmation && u.get("SMS"))
+						exports.sendSMS(u.get("SMS"), "You are checked into " + v.get("name") + ".  Your tunes will be added to the playlist.");
+						
+					var result = { user: u, venue: v };
+					response.success(result);
+				},
+				error: function(u,err) {
+					response.error(err);
+				}
+			});
+		},
+		error: function(v, err) {
+			response.error(err);
+		}
+	});
+}
+
+exports.checkinBySMS = function(venue, fromSMS, sendConfirmation, response) {
 	console.log("Attempting checkin to venue: " + venue + " from user: " + fromSMS);
 	var userQuery = new Parse.Query(Parse.User);
 	userQuery.equalTo("SMS", fromSMS);
@@ -116,10 +191,11 @@ exports.checkin = function(venue, fromSMS, response) {
 					checkin.set("checkInMills", checkInTime);
 					checkin.save(null, {});
 					
-					if (fromSMS)
+					if (sendConfirmation)
 						exports.sendSMS(fromSMS, "You are checked into " + v.get("name") + ".  Your tunes will be added to the playlist.");
-					//exports.sendPusherCheckInNotification(v.get("channelName"), u);
-					response.success("Checked in user: " + u.get("username") + " at venue " + v.get("name"));
+						
+					var result = { user: u, venue: v };
+					response.success(result);
 				},
 				error: function(u,err) {
 					response.error(err);

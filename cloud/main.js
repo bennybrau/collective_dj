@@ -9,9 +9,9 @@ Parse.Cloud.define("receiveSMS", function(request, response) {
 
 Parse.Cloud.define("checkIn", function(request, response) {
 	var venueId = request.params.VenueId;
-	var fromSMS = request.params.From;
+	var username = request.params.From;
 	
-	command.checkin(venueId, fromSMS, response);
+	command.checkin(venueId, username, false, response);
 });
 
 Parse.Cloud.define("whoIsHere", function(request, response) {
@@ -24,6 +24,11 @@ Parse.Cloud.define("whoIsHere", function(request, response) {
 			response.error(err);
 		}
 	});
+});
+
+Parse.Cloud.define("whereAmI", function(request, response) {
+	var userSMS = request.params.SMS;
+	command.whereAmI(userSMS, response);
 });
 
 
