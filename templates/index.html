@@ -96,6 +96,9 @@
     			$('#tracklist').append('<li> {{ track["title"] }} - {{ track["artist"] }} <a id="{{ track["spotifyURI"] }}" class="btn" href="#">Play</a></li>');
     		{% endfor %}
     	</script>
+    {% else %}
+    	<script>
+    		$('#tracks').append('No music...shit.');
     {% endif %}
     
     {% if pusher_app_key %}
@@ -115,7 +118,14 @@
     				if (people && (people.length > 0)) {
     					$('#results').append('<ul id="personsPresent" class="thumbnails"></ul>');
     					for (var i = 0; i < people.length; i++) {
-    						$('#personsPresent').append('<li class="span3"><div class="thumbnail"><img class="avatar" src="' + people[i].avatarImgUrl + '"><div class="caption"><h4>' + people[i].displayName + '</h4></div></div></li>');
+    						var content = '<li class="span3"><div class="thumbnail"><img class="avatar" src="';
+    						
+    						if (people[i].avatarImgUrl)
+    							content += people[i].avatarImgUrl 
+    						
+    						content += '"><div class="caption"><h4>' + people[i].displayName + '</h4></div></div></li>';
+    						
+    						$('#personsPresent').append(content);
     					}
     				} else {
     					$('#results').append('No one here Yo.');
