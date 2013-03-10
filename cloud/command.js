@@ -49,9 +49,9 @@ exports.sendSMS = function(toSMS, message) {
 	});
 }
 
-exports.whereAmI = function(userSMS, response) {
+exports.whereAmI = function(username, response) {
 	var userQuery = new Parse.Query(Parse.User);
-	userQuery.equalTo("SMS", userSMS);
+	userQuery.equalTo("username", username);
 	
 	// get any checkins by the user in the last 4 hours
 	
@@ -62,21 +62,27 @@ exports.whereAmI = function(userSMS, response) {
 	var fourHoursAgoUTC = Date.UTC(fourHoursAgo.getFullYear(), fourHoursAgo.getMonth(), fourHoursAgo.getDate(),
 											fourHoursAgo.getHours(), fourHoursAgo.getMinutes(), fourHoursAgo.getSeconds(), fourHoursAgo.getMilliseconds());
 	attendanceQuery.greaterThanOrEqualTo("checkInMills", fourHoursAgoUTC);
+	attendanceQuery.descending("checkInMills");
 	
 	attendanceQuery.first({
 		success: function(checkin) {
-			var venueId = checkin.get("venue").id;
-			var Venue = Parse.Object.extend("Venue");
-			var venueQuery = new Parse.Query(Venue);
+			if (checkin) {
+				var venueId = checkin.get("venue").id;
+				var Venue = Parse.Object.extend("Venue");
+				var venueQuery = new Parse.Query(Venue);
 			
-			venueQuery.get(venueId, {
-				success: function(venue) {
-					response.success(venue);
-				},
-				error: function(venue, error) {
-					response.error(error);
-				}
-			});
+				venueQuery.get(venueId, {
+					success: function(venue) {
+						response.success(venue);
+					},
+					error: function(venue, error) {
+						response.error(error);
+					}
+				});
+			}
+			else {
+				response.success(null);
+			}
 		},
 		error: function(error) {
 			response.error(error);

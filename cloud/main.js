@@ -27,8 +27,8 @@ Parse.Cloud.define("whoIsHere", function(request, response) {
 });
 
 Parse.Cloud.define("whereAmI", function(request, response) {
-	var userSMS = request.params.SMS;
-	command.whereAmI(userSMS, response);
+	var username = request.params.username;
+	command.whereAmI(username, response);
 });
 
 
