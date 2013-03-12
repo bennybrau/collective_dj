@@ -93,7 +93,6 @@ exports.whereAmI = function(username, response) {
 
 
 exports.whosHere = function(venue, fromSMS, response) {
-	console.log("Seeing whos at the venue: " + venue);
 	var venueQuery = new Parse.Query("Venue");
 	venueQuery.equalTo("SMSHandle", venue);
 	
