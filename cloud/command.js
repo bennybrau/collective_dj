@@ -98,11 +98,15 @@ exports.whosHere = function(venue, fromSMS, response) {
 	
 	var attendanceQuery = new Parse.Query("VenueCheckIn");
 	attendanceQuery.matchesQuery("venue", venueQuery);
+	attendanceQuery.notEqualTo("stale", true);
+	
 	var curTime = new Date();
 	var fourHoursAgo = new Date(curTime.getTime() - 14400000); //4 hrs in mills
 	var fourHoursAgoUTC = Date.UTC(fourHoursAgo.getFullYear(), fourHoursAgo.getMonth(), fourHoursAgo.getDate(),
 											fourHoursAgo.getHours(), fourHoursAgo.getMinutes(), fourHoursAgo.getSeconds(), fourHoursAgo.getMilliseconds());
 	attendanceQuery.greaterThanOrEqualTo("checkInMills", fourHoursAgoUTC);
+	attendanceQuery.descending("checkInMills");
+	
 	var checkInCollection = attendanceQuery.collection();
 	checkInCollection.fetch({
 		success: function(checkInCollection) {
@@ -135,6 +139,34 @@ exports.whosHere = function(venue, fromSMS, response) {
 	});
 }
 
+exports.markLastCheckInStaleForUser = function(user, completionHandler) {
+	
+	var attendanceQuery = new Parse.Query("VenueCheckIn");
+	attendanceQuery.equalTo("user", user);
+	var curTime = new Date();
+	var fourHoursAgo = new Date(curTime.getTime() - 14400000); //4 hrs in mills
+	var fourHoursAgoUTC = Date.UTC(fourHoursAgo.getFullYear(), fourHoursAgo.getMonth(), fourHoursAgo.getDate(),
+											fourHoursAgo.getHours(), fourHoursAgo.getMinutes(), fourHoursAgo.getSeconds(), fourHoursAgo.getMilliseconds());
+	attendanceQuery.greaterThanOrEqualTo("checkInMills", fourHoursAgoUTC);
+	attendanceQuery.descending("checkInMills");
+	
+	attendanceQuery.first({
+		success:  function(checkin) {
+			if (checkin)
+			{
+				console.log("Marking checkin with id: " + checkin.id + " stale.");
+				checkin.set("stale", true);
+				checkin.save(null, {});
+			}
+			completionHandler();
+		},
+		error: function(error) {
+			console.log("Error marking check-in stale: " + error.message);
+			completionHandler();
+		}
+	});
+}
+
 exports.checkin = function(venue, username, sendConfirmation, response) {
 	console.log("Attempting checkin to venue: " + venue + " from user: " + username);
 	var userQuery = new Parse.Query(Parse.User);
@@ -147,21 +179,26 @@ exports.checkin = function(venue, username, sendConfirmation, response) {
 		success: function(v) {
 			userQuery.first({
 				success: function(u) {
-					var VenueCheckin = Parse.Object.extend("VenueCheckIn");
-					var checkin = new VenueCheckin();
-					checkin.set("user", u);
-					checkin.set("venue", v);
-					var curDate = new Date();
-					var checkInTime = Date.UTC(curDate.getFullYear(), curDate.getMonth(), curDate.getDate(),
-											curDate.getHours(), curDate.getMinutes(), curDate.getSeconds(), curDate.getMilliseconds());
-					checkin.set("checkInMills", checkInTime);
-					checkin.save(null, {});
-					
-					if (sendConfirmation && u.get("SMS"))
-						exports.sendSMS(u.get("SMS"), "You are checked into " + v.get("name") + ".  Your tunes will be added to the playlist.");
+					//get last checkin and mark stale
+					exports.markLastCheckInStaleForUser(u, function() {
 						
-					var result = { user: u, venue: v };
-					response.success(result);
+						var VenueCheckin = Parse.Object.extend("VenueCheckIn");
+						var checkin = new VenueCheckin();
+						checkin.set("user", u);
+						checkin.set("venue", v);
+						checkin.set("stale", false);
+						var curDate = new Date();
+						var checkInTime = Date.UTC(curDate.getFullYear(), curDate.getMonth(), curDate.getDate(),
+											curDate.getHours(), curDate.getMinutes(), curDate.getSeconds(), curDate.getMilliseconds());
+						checkin.set("checkInMills", checkInTime);
+						checkin.save(null, {});
+						
+						if (sendConfirmation && u.get("SMS"))
+							exports.sendSMS(u.get("SMS"), "You are checked into " + v.get("name") + ".  Your tunes will be added to the playlist.");
+						
+						var result = { user: u, venue: v };
+						response.success(result);
+					});
 				},
 				error: function(u,err) {
 					response.error(err);
@@ -186,10 +223,14 @@ exports.checkinBySMS = function(venue, fromSMS, sendConfirmation, response) {
 		success: function(v) {
 			userQuery.first({
 				success: function(u) {
+					//get last checkin and mark stale
+					exports.markLastCheckInStaleForUser(u);
+					
 					var VenueCheckin = Parse.Object.extend("VenueCheckIn");
 					var checkin = new VenueCheckin();
 					checkin.set("user", u);
 					checkin.set("venue", v);
+					checkin.set("stale", false);
 					var curDate = new Date();
 					var checkInTime = Date.UTC(curDate.getFullYear(), curDate.getMonth(), curDate.getDate(),
 											curDate.getHours(), curDate.getMinutes(), curDate.getSeconds(), curDate.getMilliseconds());

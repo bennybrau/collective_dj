@@ -10,7 +10,6 @@ Parse.Cloud.define("receiveSMS", function(request, response) {
 Parse.Cloud.define("checkIn", function(request, response) {
 	var venueId = request.params.VenueId;
 	var username = request.params.From;
-	
 	command.checkin(venueId, username, false, response);
 });
 
